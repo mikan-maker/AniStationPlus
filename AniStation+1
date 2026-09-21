@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AniStation+ | Official Cyber Streaming Portal</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+
+  <!-- External CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+  <style>
+    /* ====================================================
+       CSS変数・基本設定
+       ==================================================== */
+    :root {
+      --bg-black: #06060c;
+      --bg-card: rgba(13, 15, 28, 0.85);
+      --bg-panel: #0a0b16;
+      --neon-cyan: #00f0ff;
+      --neon-blue: #0066ff;
+      --neon-magenta: #ff00ff;
+      --neon-pink: #ff007f;
+      --neon-purple: #8b00ff;
+      --neon-gold: #ffb800;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --border-glow: rgba(0, 240, 255, 0.35);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --grad-cyan-pink: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 50%, var(--neon-magenta) 100%);
+      --glow-cyan-sm: 0 0 10px rgba(0, 240, 255, 0.5);
+      --glow-cyan-lg: 0 0 25px rgba(0, 240, 255, 0.8), 0 0 50px rgba(0, 240, 255, 0.35);
+      --glow-pink-sm: 0 0 10px rgba(255, 0, 255, 0.5);
+      --glow-gold: 0 0 16px rgba(255, 184, 0, 0.65);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-black);
+      color: var(--text-main);
+      font-family: 'Noto Sans JP', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Three.js 3D固定背景 Canvas */
+    #threeCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+      display: block;
+    }
+
+    .cyber-grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background-size: 50px 50px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 0, 255, 0.03) 1px, transparent 1px);
+    }
+
+    #flashBangOverlay {
+      position: fixed;
+      inset: 0;
+      background: #ff0055;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 99999;
+      transition: opacity 0.15s ease-out;
+    }
+
+    /* ====================================================
+       画面1：会員登録LP（ランディングページ）
+       ==================================================== */
+    #lpContainer {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    .lp-brand-emblem {
+      width: 135px;
+      height: 135px;
+      border-radius: 34px;
+      object-fit: cover;
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.6), 0 0 75px rgba(255, 0, 255, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      margin-bottom: 1.8rem;
+    }
+
+    .lp-badge-row {
+      display: flex;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .badge-chip {
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.45rem 1.2rem;
+      border-radius: 999px;
+      letter-spacing: 0.06em;
+      backdrop-filter: blur(10px);
+    }
+
+    .chip-cyan {
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+    }
+
+    .chip-magenta {
+      background: rgba(255, 0, 255, 0.12);
+      border: 1px solid var(--neon-magenta);
+      color: #ff80ff;
+      box-shadow: var(--glow-pink-sm);
+    }
+
+    .lp-hero-headline {
+      font-size: clamp(2.1rem, 5vw, 3.8rem);
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      max-width: 950px;
+      margin-bottom: 1.2rem;
+    }
+
+    .lp-hero-headline .text-glow {
+      background: linear-gradient(135deg, var(--neon-cyan) 10%, #e0aaff 60%, var(--neon-magenta) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 25px rgba(0, 240, 255, 0.45));
+    }
+
+    .lp-sub-headline {
+      color: var(--text-sub);
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      text-align: center;
+      max-width: 680px;
+      margin-bottom: 2.5rem;
+      line-height: 1.65;
+    }
+
+    .lp-pricing-box {
+      width: 100%;
+      max-width: 530px;
+      background: var(--bg-card);
+      backdrop-filter: blur(25px);
+      border-radius: 28px;
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 240, 255, 0.22);
+      padding: 3rem 2.4rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .price-sub-caption {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 0.2em;
+      color: var(--neon-cyan);
+      margin-bottom: 0.6rem;
+      font-weight: 800;
+    }
+
+    .price-num-wrap {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .price-currency {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .price-digits {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 5.2rem;
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(180deg, #ffffff 40%, #c4b5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.35));
+    }
+
+    .price-period-label {
+      font-size: 1.2rem;
+      color: var(--text-sub);
+      font-weight: 700;
+    }
+
+    .lp-feature-items {
+      list-style: none;
+      text-align: left;
+      border-top: 1px dashed rgba(255, 255, 255, 0.12);
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+      padding: 1.4rem 0.5rem;
+      margin: 1.8rem 0 2.2rem;
+    }
+
+    .lp-feature-items li {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.95rem;
+      margin-bottom: 0.85rem;
+      color: #e2e8f0;
+    }
+
+    .lp-feature-items li:last-child {
+      margin-bottom: 0;
+    }
+
+    .icon-check-svg {
+      color: var(--neon-cyan);
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .btn-super-cyber {
+      width: 100%;
+      padding: 1.35rem 1.8rem;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      background: var(--grad-cyan-pink);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.55), 0 0 55px rgba(255, 0, 255, 0.45);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-super-cyber:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 0 45px rgba(0, 240, 255, 0.85), 0 0 80px rgba(255, 0, 255, 0.75);
+    }
+
+    .btn-super-cyber:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    /* ====================================================
+       画面2：専用アニメポータル（2カラム・コックピットUI）
+       ==================================================== */
+    #portalContainer {
+      display: none;
+      position: relative;
+      z-index: 20;
+      min-height: 100vh;
+      flex-direction: column;
+      opacity: 0;
+    }
+
+    .cyber-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 2.2rem;
+      background: rgba(8, 9, 18, 0.94);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      cursor: pointer;
+    }
+
+    .header-logo-container img {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 240, 255, 0.6);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
+    }
+
+    .header-brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .header-brand-title span {
+      color: var(--neon-magenta);
+    }
+
+    .pro-member-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: rgba(255, 184, 0, 0.12);
+      border: 1px solid var(--neon-gold);
+      color: var(--neon-gold);
+      padding: 0.45rem 1.25rem;
+      border-radius: 999px;
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      box-shadow: var(--glow-gold);
+    }
+
+    .gold-dot-blink {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-gold);
+      box-shadow: 0 0 10px var(--neon-gold);
+      animation: blinkGold 1.8s infinite;
+    }
+
+    @keyframes blinkGold {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    /* 2カラムレイアウト構造 */
+    .portal-main-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 72px);
+      overflow: hidden;
+    }
+
+    /* 左側プロ仕様固定サイドバー */
+    .cyber-sidebar {
+      width: 250px;
+      background: #070812;
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 1.8rem 0.9rem;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 992px) {
+      .portal-main-layout { flex-direction: column; height: auto; }
+      .cyber-sidebar {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-around;
+        padding: 0.6rem 0.4rem;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        position: sticky;
+        top: 72px;
+        z-index: 90;
+      }
+    }
+
+    .side-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.95rem 1.2rem;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: var(--text-sub);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      text-align: left;
+    }
+
+    .side-nav-btn svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      transition: color 0.25s;
+    }
+
+    .side-nav-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .side-nav-btn.active {
+      color: var(--neon-cyan);
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.4);
+      box-shadow: inset 0 0 15px rgba(0, 240, 255, 0.15), 0 0 15px rgba(0, 240, 255, 0.2);
+    }
+
+    .side-nav-btn.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 15%;
+      height: 70%;
+      width: 4px;
+      background: var(--neon-cyan);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .side-nav-btn.active svg {
+      color: var(--neon-cyan);
+      filter: drop-shadow(0 0 8px var(--neon-cyan));
+    }
+
+    /* 右側メインエリア */
+    .portal-content-frame {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2.2rem 2.6rem 6rem;
+      position: relative;
+    }
+
+    @media (max-width: 768px) {
+      .portal-content-frame { padding: 1.2rem 1rem 4rem; }
+    }
+
+    .tab-view-container {
+      display: none;
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .tab-view-container.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ====================================================
+       タブ1：「ホーム」エリア（アマプラ超越アニメUI）
+       ==================================================== */
+    .hero-banner-cinema {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      border-radius: 26px;
+      overflow: hidden;
+      margin-bottom: 3.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.95), 0 0 40px rgba(157, 0, 255, 0.3);
+      display: flex;
+      align-items: flex-end;
+      padding: 3.2rem;
+      background: 
+        linear-gradient(to top, #04050a 10%, rgba(4, 5, 10, 0.5) 50%, transparent 90%),
+        linear-gradient(135deg, rgba(157, 0, 255, 0.45) 0%, rgba(0, 240, 255, 0.3) 50%, rgba(255, 0, 255, 0.45) 100%),
+        radial-gradient(circle at 75% 30%, #350963 0%, #060714 80%);
+    }
+
+    .hero-banner-info {
+      position: relative;
+      z-index: 2;
+      max-width: 750px;
+    }
+
+    .hero-cinema-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255, 0, 255, 0.2);
+      border: 1px solid var(--neon-magenta);
+      color: #ff80ff;
+      padding: 0.38rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.1rem;
+      box-shadow: var(--glow-pink-sm);
+    }
+
+    .hero-cinema-title {
+      font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+      font-weight: 900;
+      line-height: 1.18;
+      margin-bottom: 0.85rem;
+      color: #fff;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .hero-cinema-desc {
+      font-size: 1.05rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 1.8rem;
+    }
+
+    .btn-hero-play {
+      padding: 1.05rem 2.4rem;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #fff;
+      background: var(--grad-cyan-pink);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.5), 0 0 45px rgba(255, 0, 255, 0.45);
+      transition: all 0.3s ease;
+    }
+
+    .btn-hero-play:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.8), 0 0 70px rgba(255, 0, 255, 0.7);
+    }
+
+    /* カルーセルセクション */
+    .carousel-row-wrap {
+      margin-bottom: 3.5rem;
+    }
+
+    .carousel-top-bar {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .carousel-heading-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .carousel-title-accent {
+      width: 6px;
+      height: 20px;
+      background: var(--neon-cyan);
+      border-radius: 3px;
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .carousel-see-all {
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
+      cursor: pointer;
+      font-weight: 700;
+      transition: opacity 0.2s;
+    }
+
+    .carousel-see-all:hover {
+      opacity: 0.75;
+    }
+
+    .carousel-cards-track {
+      display: flex;
+      gap: 1.4rem;
+      overflow-x: auto;
+      padding-bottom: 1.2rem;
+      scroll-behavior: smooth;
+    }
+
+    .carousel-cards-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* 作品カード */
+    .anime-shelf-card {
+      flex: 0 0 290px;
+      background: var(--bg-card);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .anime-shelf-card:hover {
+      transform: scale(1.06) translateY(-6px);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 240, 255, 0.45);
+      z-index: 10;
+    }
+
+    .anime-card-thumbnail-box {
+      position: relative;
+      width: 100%;
+      height: 165px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .thumb-bg-saiki { background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #090a14 100%); }
+    .thumb-bg-oshi { background: linear-gradient(135deg, #831843 0%, #be185d 50%, #090a14 100%); }
+    .thumb-bg-jujutsu { background: linear-gradient(135deg, #14532d 0%, #15803d 50%, #090a14 100%); }
+    .thumb-bg-solo { background: linear-gradient(135deg, #3b0764 0%, #6b21a8 50%, #090a14 100%); }
+    .thumb-bg-frieren { background: linear-gradient(135deg, #134e4a 0%, #0f766e 50%, #090a14 100%); }
+    .thumb-bg-chainsaw { background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #090a14 100%); }
+
+    .thumb-lettering-ghost {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.22);
+      letter-spacing: 0.1em;
+    }
+
+    .card-badge-1080p {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      backdrop-filter: blur(5px);
+    }
+
+    .anime-card-detail-pane {
+      padding: 1.1rem 1.2rem;
+    }
+
+    .card-rating-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    .card-stars {
+      color: var(--neon-gold);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .card-episodes-total {
+      color: var(--text-sub);
+    }
+
+    .card-headline-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.35rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-snippet-synopsis {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ====================================================
+       タブ2：「配信スケジュール」エリア（近未来週間番組表）
+       ==================================================== */
+    .schedule-header-pane {
+      margin-bottom: 2.2rem;
+    }
+
+    .schedule-hero-title {
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 0.45rem;
+    }
+
+    .schedule-table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.6rem;
+    }
+
+    .schedule-day-column {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .schedule-day-header {
+      padding: 1rem 1.3rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-name-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--neon-cyan);
+      letter-spacing: 0.08em;
+    }
+
+    .day-badge-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.72rem;
+      color: #ff80ff;
+      font-weight: 800;
+    }
+
+    .blinking-led-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-magenta);
+      box-shadow: 0 0 8px var(--neon-magenta);
+      animation: pulseLed 1.3s infinite;
+    }
+
+    @keyframes pulseLed {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.6); opacity: 0.35; }
+    }
+
+    .day-schedule-body {
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .schedule-card-entry {
+      padding: 1.05rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .schedule-card-entry:hover {
+      background: rgba(0, 240, 255, 0.06);
+      border-color: rgba(0, 240, 255, 0.35);
+      transform: translateX(4px);
+    }
+
+    .sch-time-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--neon-cyan);
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+      display: inline-block;
+    }
+
+    .sch-anime-name {
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+
+    .sch-anime-sub {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    /* ====================================================
+       タブ3：「マイリスト」エリア（SortableJS ＆ Chart.js）
+       ==================================================== */
+    .mylist-sortable-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1.8rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .mylist-item-card {
+      background: var(--bg-panel);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.3s ease;
+      cursor: grab;
+    }
+
+    .mylist-item-card:active {
+      cursor: grabbing;
+    }
+
+    .mylist-item-card:hover {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+
+    .mylist-thumb-cover {
+      position: relative;
+      width: 100%;
+      height: 165px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mylist-card-content {
+      padding: 1.2rem;
+    }
+
+    .mylist-title-text {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+
+    .mylist-progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-bottom: 0.5rem;
+    }
+
+    .netflix-track-bar {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .netflix-fill-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+      box-shadow: 0 0 8px var(--neon-cyan);
+      border-radius: 999px;
+    }
+
+    .analytics-charts-deck {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .chart-panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 1.8rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    .chart-panel-title {
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .chart-panel-title-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    /* ====================================================
+       タブ4：「限定ファンチャット」エリア（JSリアルタイムチャット）
+       ==================================================== */
+    .chat-deck-container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #080913;
+      border: 1px solid rgba(0, 240, 255, 0.28);
+      border-radius: 24px;
+      box-shadow: 0 0 45px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 240, 255, 0.18);
+      height: calc(100vh - 160px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-top-header {
+      padding: 1.2rem 1.8rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-channel-info {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .chat-channel-title {
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .chat-live-counter {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--neon-cyan);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .chat-stream-timeline {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .chat-stream-timeline::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-stream-timeline::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .chat-speech-bubble-row {
+      display: flex;
+      gap: 0.95rem;
+      animation: bubbleSlideIn 0.25s ease-out;
+    }
+
+    @keyframes bubbleSlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-avatar-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #14172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .avatar-pro-user {
+      background: rgba(255, 184, 0, 0.15);
+      border-color: var(--neon-gold);
+      color: var(--neon-gold);
+      box-shadow: 0 0 12px rgba(255, 184, 0, 0.35);
+    }
+
+    .avatar-user-cyan { color: var(--neon-cyan); border-color: rgba(0, 240, 255, 0.4); }
+    .avatar-user-pink { color: var(--neon-magenta); border-color: rgba(255, 0, 255, 0.4); }
+    .avatar-user-purple { color: #c084fc; border-color: rgba(192, 132, 252, 0.4); }
+
+    .chat-message-bundle {
+      display: flex;
+      flex-direction: column;
+      max-width: 82%;
+    }
+
+    .chat-user-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.65rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .chat-author-name {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .author-gold-badge {
+      color: var(--neon-gold);
+      text-shadow: 0 0 8px rgba(255, 184, 0, 0.5);
+    }
+
+    .chat-post-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+
+    .chat-message-text {
+      padding: 0.8rem 1.15rem;
+      border-radius: 14px;
+      font-size: 0.93rem;
+      line-height: 1.55;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+
+    .text-gold-highlight {
+      background: rgba(255, 184, 0, 0.08);
+      border-color: rgba(255, 184, 0, 0.35);
+      color: #fff;
+    }
+
+    .chat-bottom-input-bar {
+      padding: 1.2rem 1.6rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 0.85rem;
+    }
+
+    .chat-text-input {
+      flex: 1;
+      background: #04050a;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 12px;
+      padding: 0.9rem 1.25rem;
+      color: #fff;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .chat-text-input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+    }
+
+    .btn-send-message {
+      padding: 0 1.8rem;
+      background: var(--grad-cyan-pink);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'Orbitron', 'Noto Sans JP', sans-serif;
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.4);
+      transition: all 0.25s;
+    }
+
+    .btn-send-message:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 28px rgba(0, 240, 255, 0.7);
+    }
+
+    /* ====================================================
+       タブ5：専用動画プレイヤー画面 ＆ File API
+       ==================================================== */
+    .player-cockpit-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+    }
+
+    .video-viewport-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 240, 255, 0.45);
+      box-shadow: 0 0 55px rgba(0, 240, 255, 0.25), 0 25px 65px rgba(0, 0, 0, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 実動画エレメント */
+    #realVideoPlayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      display: none;
+      z-index: 2;
+    }
+
+    /* シミュレーション用Canvas */
+    #streamSimulationCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    #dynamicWatermark {
+      position: absolute;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.22);
+      letter-spacing: 0.08em;
+      pointer-events: none;
+      z-index: 12;
+      user-select: none;
+      transition: top 3s ease, left 3s ease;
+      white-space: nowrap;
+    }
+
+    .corner-branding-tag {
+      position: absolute;
+      top: 1.6rem;
+      right: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      opacity: 0.7;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      pointer-events: none;
+      color: #fff;
+      z-index: 10;
+    }
+
+    .center-action-play {
+      position: absolute;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.65);
+      border: 2px solid var(--neon-cyan);
+      box-shadow: 0 0 35px var(--neon-cyan);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #fff;
+      transition: all 0.25s ease;
+      z-index: 15;
+    }
+
+    .center-action-play:hover {
+      transform: scale(1.1);
+      background: rgba(0, 240, 255, 0.3);
+    }
+
+    .player-hud-cockpit {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.6rem 1.8rem 1.1rem;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.65) 60%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      z-index: 20;
+    }
+
+    .hud-seek-bar-track {
+      position: relative;
+      width: 100%;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: height 0.15s ease;
+    }
+
+    .hud-seek-bar-track:hover {
+      height: 10px;
+    }
+
+    .hud-seek-progress-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+      border-radius: 999px;
+      box-shadow: 0 0 12px var(--neon-cyan);
+    }
+
+    .hud-controls-deck {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .hud-left-items, .hud-right-items {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .hud-ctrl-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .hud-ctrl-btn:hover {
+      color: var(--neon-cyan);
+      transform: scale(1.15);
+    }
+
+    .hud-playback-timer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      letter-spacing: 0.05em;
+    }
+
+    .hud-volume-control-box {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .hud-slider-range {
+      -webkit-appearance: none;
+      width: 80px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .hud-slider-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .quality-popover-anchor {
+      position: relative;
+    }
+
+    .quality-badge-btn {
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+    }
+
+    .quality-dropdown-flyout {
+      position: absolute;
+      bottom: 145%;
+      right: 0;
+      background: #080913;
+      border: 1px solid var(--neon-cyan);
+      border-radius: 8px;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.45);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+      min-width: 110px;
+    }
+
+    .quality-item-btn {
+      padding: 0.55rem 0.9rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .quality-item-btn:hover {
+      background: rgba(0, 240, 255, 0.2);
+      color: var(--neon-cyan);
+    }
+
+    /* デモ専用File APIアップロードツールバー */
+    .file-upload-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px dashed var(--neon-cyan);
+      border-radius: 14px;
+      padding: 0.9rem 1.4rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .file-upload-label-btn {
+      background: var(--grad-cyan-pink);
+      color: #fff;
+      padding: 0.6rem 1.4rem;
+      border-radius: 10px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .file-upload-label-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+    }
+
+    .file-status-text {
+      font-size: 0.85rem;
+      color: var(--neon-cyan);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .player-meta-description-deck {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.6rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 1.6rem 1.9rem;
+    }
+
+    .video-active-title {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #fff;
+      margin-bottom: 0.45rem;
+    }
+
+    .video-active-synopsis {
+      font-size: 0.92rem;
+      color: var(--text-sub);
+      line-height: 1.65;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js 3D パーティクル固定背景 Canvas -->
+  <canvas id="threeCanvas"></canvas>
+  <div class="cyber-grid-overlay"></div>
+  <div id="flashBangOverlay"></div>
+
+  <!-- ====================================================
+       画面1：会員登録LP（ランディングページ）
+       ==================================================== -->
+  <div id="lpContainer">
+    <img src="https://raw.githubusercontent.com/mikan-maker/AniStationPlus/refs/heads/main/IMG_2364.jpeg" alt="AniStation+ Emblem" class="lp-brand-emblem anim-target">
+
+    <div class="lp-badge-row anim-target">
+      <span class="badge-chip chip-cyan">⚡ YouTube 公式アニメ配信本拠地</span>
+      <span class="badge-chip chip-magenta">初月０円 無料トライアル受付中</span>
+    </div>
+
+    <h1 class="lp-hero-headline anim-target">
+      YouTubeから本拠地へ。<br>
+      公式アニメ、ここで<span class="text-glow">最速・全編見放題。</span>
+    </h1>
+
+    <p class="lp-sub-headline anim-target">
+      ショートや切り抜き動画の「続き」が今すぐすべて解放される。<br>
+      完全広告ゼロ・フルHD 1080p・最速独占アーカイブを缶ジュース1本分の価格で解放しよう。
+    </p>
+
+    <div class="lp-pricing-box anim-target">
+      <div class="price-sub-caption">ALL-ACCESS PASS</div>
+      <div class="price-num-wrap">
+        <span class="price-currency">¥</span>
+        <span class="price-digits">190</span>
+        <span class="price-period-label">/ 月</span>
+      </div>
+      <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.1rem;">（税込・いつでもワンクリック解約OK）</div>
+
+      <div class="lp-badge-row" style="margin-bottom: 0;">
+        <span class="badge-chip chip-magenta">⚡ 1日あたり約6円</span>
+        <span class="badge-chip chip-cyan">今なら初月無料</span>
+      </div>
+
+      <ul class="lp-feature-items">
+        <li>
+          <svg class="icon-check-svg" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          <strong>『斉木楠雄』『【推しの子】』全話ノーカット見放題</strong>
+        </li>
+        <li>
+          <svg class="icon-check-svg" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          YouTube先行公開・未公開シーン・限定アフタートーク
+        </li>
+        <li>
+          <svg class="icon-check-svg" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          完全広告ゼロ・1080p/4K UltraHD・オフライン保存対応
+        </li>
+      </ul>
+
+      <button class="btn-super-cyber" id="btnRegisterTrigger">
+        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span>10秒でかんたん登録！今すぐ見放題を始める</span>
+      </button>
+      <div style="font-size: 0.76rem; color: #64748b; margin-top: 0.95rem;">
+        ※クリックと同時に特別認証ゲートへ接続され、ポータルが展開します
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       画面2：専用アニメポータル（2カラム・コックピットUI）
+       ==================================================== -->
+  <div id="portalContainer">
+    <!-- プレミアム共通ヘッダー -->
+    <header class="cyber-header">
+      <div class="header-logo-container" onclick="switchNavTab('home')">
+        <img src="https://raw.githubusercontent.com/mikan-maker/AniStationPlus/refs/heads/main/IMG_2364.jpeg" alt="AniStation+ Logo">
+        <div class="header-brand-title">AniStation<span>+</span></div>
+      </div>
+      <div class="pro-member-pill">
+        <span class="gold-dot-blink"></span>
+        <span>PRO MEMBER（有効期限：永久）</span>
+      </div>
+    </header>
+
+    <div class="portal-main-layout">
+      <!-- 左側プロ仕様固定サイドバー -->
+      <aside class="cyber-sidebar">
+        <button class="side-nav-btn active" data-tab="home" onclick="switchNavTab('home')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>ホーム</span>
+        </button>
+        <button class="side-nav-btn" data-tab="schedule" onclick="switchNavTab('schedule')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span>配信スケジュール</span>
+        </button>
+        <button class="side-nav-btn" data-tab="mylist" onclick="switchNavTab('mylist')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+          <span>マイリスト</span>
+        </button>
+        <button class="side-nav-btn" data-tab="chat" onclick="switchNavTab('chat')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span>限定ファンチャット</span>
+        </button>
+        <button class="side-nav-btn" data-tab="player" onclick="switchNavTab('player')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>再生プレイヤー</span>
+        </button>
+      </aside>
+
+      <!-- 右側メインコンテンツエリア -->
+      <main class="portal-content-frame">
+
+        <!-- ■ 1. 「ホーム」タブ -->
+        <section id="tab-home" class="tab-view-container show">
+          <!-- 巨大シネマティックヒーローエリア -->
+          <div class="hero-banner-cinema">
+            <div class="hero-banner-info">
+              <div class="hero-cinema-pill">🔥 AniStation+ EXCLUSIVE FEATURE</div>
+              <h2 class="hero-cinema-title">【推しの子】第2期 / 斉木楠雄のΨ難</h2>
+              <p class="hero-cinema-desc">
+                プレミアム会員限定・全24話フルHD最速見放題配信中！<br>
+                YouTubeショートで世界中が熱狂した話題のクライマックスや、未公開カットを完全収録。
+              </p>
+              <button class="btn-hero-play" onclick="openPlayerWithDetails('斉木楠雄のΨ難 第1期', '第1χ「超能力者のΨ難（燃堂のキス）」', '生まれながらにして超能力を持つ斉木楠雄。YouTubeショートで話題の爆笑シーン完全版！')">
+                <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>第1話から今すぐ視聴</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 列①：YouTubeショートで話題の続き -->
+          <div class="carousel-row-wrap">
+            <div class="carousel-top-bar">
+              <div class="carousel-heading-title">
+                <span class="carousel-title-accent"></span>
+                <span>YouTubeショートで話題の続き</span>
+              </div>
+              <span class="carousel-see-all">すべて見る →</span>
+            </div>
+            <div class="carousel-cards-track">
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('斉木楠雄のΨ難 第1期', '第1χ「超能力者のΨ難」', '燃堂のキスシーンでネットが騒然となった伝説の第1話！')">
+                <div class="anime-card-thumbnail-box thumb-bg-saiki">
+                  <div class="thumb-lettering-ghost">SAIKI K.</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">全24話</span>
+                  </div>
+                  <div class="card-headline-title">斉木楠雄のΨ難 第1期</div>
+                  <div class="card-snippet-synopsis">生まれながらの超能力者・斉木楠雄と、個性が強すぎる仲間たちの日常。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('【推しの子】第2期', '第24話「お風呂REC / 復讐の行方」', 'SNSトレンド1位を獲得した衝撃のお風呂RECシーンを含む最終回！')">
+                <div class="anime-card-thumbnail-box thumb-bg-oshi">
+                  <div class="thumb-lettering-ghost">OSHI NO KO</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 5.0</span>
+                    <span class="card-episodes-total">全24話</span>
+                  </div>
+                  <div class="card-headline-title">【推しの子】第2期</div>
+                  <div class="card-snippet-synopsis">舞台『東京ブレイド』終幕。新たな謎とお風呂RECの衝撃エピソード。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('呪術廻戦 懐玉・玉折', '第29話「玉折」', '五条と夏油、最強のふたりの道が分かたれた雨の日の真実。')">
+                <div class="anime-card-thumbnail-box thumb-bg-jujutsu">
+                  <div class="thumb-lettering-ghost">JUJUTSU</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">全47話</span>
+                  </div>
+                  <div class="card-headline-title">呪術廻戦 懐玉・玉折</div>
+                  <div class="card-snippet-synopsis">青い春は二度と戻らない。圧倒的ハイクオリティ作画で描かれる青春の終焉。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('俺だけレベルアップな件', '第12話「Arise」', '最弱ハンターが影の君主へと覚醒する爽快感MAXの戦闘シーン！')">
+                <div class="anime-card-thumbnail-box thumb-bg-solo">
+                  <div class="thumb-lettering-ghost">SOLO LEVEL</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.8</span>
+                    <span class="card-episodes-total">全12話</span>
+                  </div>
+                  <div class="card-headline-title">俺だけレベルアップな件</div>
+                  <div class="card-snippet-synopsis">人類最弱兵器と呼ばれた青年が、世界を震撼させる絶対的存在へ。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('チェンソーマン', '第1話「犬とチェンソー」', 'デビルハンター・デンジの過酷な運命とポチタの契約。')">
+                <div class="anime-card-thumbnail-box thumb-bg-chainsaw">
+                  <div class="thumb-lettering-ghost">CHAINSAW</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">全12話</span>
+                  </div>
+                  <div class="card-headline-title">チェンソーマン</div>
+                  <div class="card-snippet-synopsis">MAPPAが誇る最高峰の作画クオリティと血飛沫の狂宴。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 列②：今週のトレンドアニメ -->
+          <div class="carousel-row-wrap">
+            <div class="carousel-top-bar">
+              <div class="carousel-heading-title">
+                <span class="carousel-title-accent" style="background: var(--neon-magenta); box-shadow: 0 0 8px var(--neon-magenta);"></span>
+                <span>今週のトレンドアニメ（世界中で話題の最新作）</span>
+              </div>
+              <span class="carousel-see-all">すべて見る →</span>
+            </div>
+            <div class="carousel-cards-track">
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('葬送のフリーレン', '第28話「また会ったときに恥ずかしいからね」', '一級魔法使い試験編の完結と、新たな旅立ち。')">
+                <div class="anime-card-thumbnail-box thumb-bg-frieren">
+                  <div class="thumb-lettering-ghost">FRIEREN</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 5.0</span>
+                    <span class="card-episodes-total">全28話</span>
+                  </div>
+                  <div class="card-headline-title">葬送のフリーレン</div>
+                  <div class="card-snippet-synopsis">千年以上生きたエルフの魔法使いが、人を知るために辿る後日譚ファンタジー。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('斉木楠雄のΨ難 第1期', '第2χ「漆黒の翼こと海藤瞬」', '中二病の海藤瞬と斉木楠雄のクスッと笑える放課後。')">
+                <div class="anime-card-thumbnail-box thumb-bg-saiki">
+                  <div class="thumb-lettering-ghost">SAIKI K. 2</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.8</span>
+                    <span class="card-episodes-total">第2話</span>
+                  </div>
+                  <div class="card-headline-title">斉木楠雄のΨ難 第2χ</div>
+                  <div class="card-snippet-synopsis">秘密結社ダークリユニオンと戦う戦士（自称）の受難。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('【推しの子】第2期', '第21話「伝言ゲーム」', '舞台稽古で激突する演技への執念と才能の壁。')">
+                <div class="anime-card-thumbnail-box thumb-bg-oshi">
+                  <div class="thumb-lettering-ghost">OSHI NO KO 21</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">第21話</span>
+                  </div>
+                  <div class="card-headline-title">【推しの子】第21話</div>
+                  <div class="card-snippet-synopsis">天才役者・黒川あかねとアクアの緻密な舞台リハーサル劇。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('呪術廻戦 渋谷事変', '第38話「揺蕩」', '伏黒恵と伏黒甚爾の運命の邂逅と死闘。')">
+                <div class="anime-card-thumbnail-box thumb-bg-jujutsu">
+                  <div class="thumb-lettering-ghost">SHIBUYA</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">第38話</span>
+                  </div>
+                  <div class="card-headline-title">呪術廻戦 渋谷事変</div>
+                  <div class="card-snippet-synopsis">渋谷駅構内で繰り広げられる呪術師と特級呪霊の全面戦争。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('俺だけレベルアップな件', '第8話「ただの悪意」', 'レッドゲートの試練と絶対的絶望の中で覚醒する力。')">
+                <div class="anime-card-thumbnail-box thumb-bg-solo">
+                  <div class="thumb-lettering-ghost">LEVEL 8</div>
+                  <span class="card-badge-1080p">1080p FHD</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.8</span>
+                    <span class="card-episodes-total">第8話</span>
+                  </div>
+                  <div class="card-headline-title">俺だけレベルアップな件 第8話</div>
+                  <div class="card-snippet-synopsis">裏切りと生存競争。最弱ハンターが冷徹な殺戮者へと変貌を遂げる。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 列③：AniStation+ 限定おすすめ枠 -->
+          <div class="carousel-row-wrap">
+            <div class="carousel-top-bar">
+              <div class="carousel-heading-title">
+                <span class="carousel-title-accent" style="background: var(--neon-gold); box-shadow: 0 0 8px var(--neon-gold);"></span>
+                <span>AniStation+ 限定おすすめ枠</span>
+              </div>
+              <span class="carousel-see-all">すべて見る →</span>
+            </div>
+            <div class="carousel-cards-track">
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('斉木楠雄のΨ難 特典', '未公開声優アフタートーク', '豪華声優陣による裏話満載のプレミアム限定映像！')">
+                <div class="anime-card-thumbnail-box thumb-bg-saiki">
+                  <div class="thumb-lettering-ghost">EXCLUSIVE</div>
+                  <span class="card-badge-1080p">PRO EXCLUSIVE</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 5.0</span>
+                    <span class="card-episodes-total">限定特番</span>
+                  </div>
+                  <div class="card-headline-title">斉木楠雄 キャスト座談会</div>
+                  <div class="card-snippet-synopsis">神谷浩史・小野大輔・島﨑信長が語るアフレコ裏話＆NG集。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('【推しの子】制作原画集', '劇中劇メイキングムービー', '『東京ブレイド』舞台演出の超絶作画メイキング。')">
+                <div class="anime-card-thumbnail-box thumb-bg-oshi">
+                  <div class="thumb-lettering-ghost">MAKING</div>
+                  <span class="card-badge-1080p">PRO EXCLUSIVE</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">制作記録</span>
+                  </div>
+                  <div class="card-headline-title">【推しの子】制作メイキング</div>
+                  <div class="card-snippet-synopsis">作画監督インタビューと未公開設定画・刀殺陣コンテ全集。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('呪術廻戦 サウンドトラック', '高音質ロスレスオーディオライブ', '大迫力のバトルBGMを最高ビットレートでお届け。')">
+                <div class="anime-card-thumbnail-box thumb-bg-jujutsu">
+                  <div class="thumb-lettering-ghost">SOUND</div>
+                  <span class="card-badge-1080p">LOSSLESS</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 5.0</span>
+                    <span class="card-episodes-total">OST全曲</span>
+                  </div>
+                  <div class="card-headline-title">呪術廻戦 劇中曲アーカイブ</div>
+                  <div class="card-snippet-synopsis">オーケストラ録音のオリジナル音源を未圧縮ロスレスで体感。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('葬送のフリーレン 特別編', 'ヒンメル旅の軌跡まとめ', '勇者ヒンメルの名言とフリーレンの記憶を時系列で再構築。')">
+                <div class="anime-card-thumbnail-box thumb-bg-frieren">
+                  <div class="thumb-lettering-ghost">SPECIAL</div>
+                  <span class="card-badge-1080p">PRO EXCLUSIVE</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 5.0</span>
+                    <span class="card-episodes-total">総集編</span>
+                  </div>
+                  <div class="card-headline-title">フリーレン 勇者追想録</div>
+                  <div class="card-snippet-synopsis">10年間の冒険の記憶を振り返る、心揺さぶるスペシャル編集版。</div>
+                </div>
+              </div>
+
+              <div class="anime-shelf-card" onclick="openPlayerWithDetails('俺だけレベルアップな件 原画展示', '影の君主エフェクトデザイン解析', '影抽出エフェクトの3D・作画融合技術を徹底解説。')">
+                <div class="anime-card-thumbnail-box thumb-bg-solo">
+                  <div class="thumb-lettering-ghost">VFX DOC</div>
+                  <span class="card-badge-1080p">PRO EXCLUSIVE</span>
+                </div>
+                <div class="anime-card-detail-pane">
+                  <div class="card-rating-line">
+                    <span class="card-stars">★★★★★ 4.9</span>
+                    <span class="card-episodes-total">VFXメイキング</span>
+                  </div>
+                  <div class="card-headline-title">俺レベ VFX制作ドキュメント</div>
+                  <div class="card-snippet-synopsis">ダークブルーのオーラとカメラワークの極意をスタジオ解説。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ■ 2. 「配信スケジュール」タブ -->
+        <section id="tab-schedule" class="tab-view-container">
+          <div class="schedule-header-pane">
+            <h2 class="schedule-hero-title">WEEKLY BROADCAST TIMETABLE</h2>
+            <p style="color: var(--text-sub); font-size: 0.95rem;">
+              AniStation+ 公式アニメ更新タイムテーブル（サイバー同期システム）
+            </p>
+          </div>
+
+          <div class="schedule-table-grid">
+            <!-- 月曜 -->
+            <div class="schedule-day-column">
+              <div class="schedule-day-header">
+                <span class="day-name-label">MONDAY</span>
+                <div class="day-badge-indicator">
+                  <span class="blinking-led-dot"></span>
+                  <span>LIVE ARCHIVE</span>
+                </div>
+              </div>
+              <div class="day-schedule-body">
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('斉木楠雄のΨ難 第1期', '第1χ〜第4χ 一挙更新', '月曜恒例の爆笑コメディ枠！')">
+                  <span class="sch-time-chip">20:00 JST</span>
+                  <div class="sch-anime-name">斉木楠雄のΨ難 第1期</div>
+                  <div class="sch-anime-sub">第1χ〜第4χ 最速見放題更新</div>
+                </div>
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('チェンソーマン', '第1話「犬とチェンソー」', '激しいバトルアクション枠')">
+                  <span class="sch-time-chip">24:00 JST</span>
+                  <div class="sch-anime-name">チェンソーマン</div>
+                  <div class="sch-anime-sub">ノーカットHD配信</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 水曜 -->
+            <div class="schedule-day-column">
+              <div class="schedule-day-header">
+                <span class="day-name-label">WEDNESDAY</span>
+                <div class="day-badge-indicator">
+                  <span class="blinking-led-dot"></span>
+                  <span>PREMIERE</span>
+                </div>
+              </div>
+              <div class="day-schedule-body">
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('【推しの子】第2期', '第24話「お風呂REC / 復讐の行方」', '最終回最速解禁！')">
+                  <span class="sch-time-chip">23:00 JST</span>
+                  <div class="sch-anime-name">【推しの子】第2期 最終回</div>
+                  <div class="sch-anime-sub">SNS沸騰のお風呂RECシーン全編</div>
+                </div>
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('ダンジョン飯', '第14話', '水曜深夜のグルメファンタジー')">
+                  <span class="sch-time-chip">24:30 JST</span>
+                  <div class="sch-anime-name">ダンジョン飯</div>
+                  <div class="sch-anime-sub">最新話オンタイム配信</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 金曜 -->
+            <div class="schedule-day-column">
+              <div class="schedule-day-header">
+                <span class="day-name-label">FRIDAY</span>
+                <div class="day-badge-indicator">
+                  <span class="blinking-led-dot"></span>
+                  <span>VIP NIGHT</span>
+                </div>
+              </div>
+              <div class="day-schedule-body">
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('呪術廻戦 渋谷事変', '第38話「揺蕩」', '怒涛のバトル展開')">
+                  <span class="sch-time-chip">22:00 JST</span>
+                  <div class="sch-anime-name">呪術廻戦 渋谷事変</div>
+                  <div class="sch-anime-sub">伏黒恵 vs 甚爾の死闘</div>
+                </div>
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('俺だけレベルアップな件', '第8話', '影の兵士誕生')">
+                  <span class="sch-time-chip">24:00 JST</span>
+                  <div class="sch-anime-name">俺だけレベルアップな件</div>
+                  <div class="sch-anime-sub">独占最速レート更新</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 日曜 -->
+            <div class="schedule-day-column">
+              <div class="schedule-day-header">
+                <span class="day-name-label">SUNDAY</span>
+                <div class="day-badge-indicator">
+                  <span class="blinking-led-dot"></span>
+                  <span>WEEKEND SPECIAL</span>
+                </div>
+              </div>
+              <div class="day-schedule-body">
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('葬送のフリーレン', '第12話「本物の勇者」', '日曜の至福のひととき')">
+                  <span class="sch-time-chip">19:00 JST</span>
+                  <div class="sch-anime-name">葬送のフリーレン</div>
+                  <div class="sch-anime-sub">ヒンメルとフリーレンの記憶</div>
+                </div>
+                <div class="schedule-card-entry" onclick="openPlayerWithDetails('AniStation+ 会員限定座談会', '今週のアニメ総振り返り生配信', 'クリエイター秘話')">
+                  <span class="sch-time-chip">21:30 JST</span>
+                  <div class="sch-anime-name">会員限定LIVEストリーム</div>
+                  <div class="sch-anime-sub">コメント連動振り返り特番</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ■ 3. 「マイリスト」タブ -->
+        <section id="tab-mylist" class="tab-view-container">
+          <div class="schedule-header-pane">
+            <h2 class="schedule-hero-title">MY PLAYLIST &amp; ANALYTICS</h2>
+            <p style="color: var(--text-sub); font-size: 0.95rem;">
+              ドラッグ＆ドロップで優先度を並び替え可能（SortableJS連動）＆ 視聴動向分析
+            </p>
+          </div>
+
+          <div class="mylist-sortable-grid" id="sortableMylistGrid">
+            <div class="mylist-item-card" onclick="openPlayerWithDetails('斉木楠雄のΨ難 第1期', '第3χ「照橋心美のおっふ！」', '視聴中エピソード')">
+              <div class="mylist-thumb-cover thumb-bg-saiki">
+                <div class="thumb-lettering-ghost">SAIKI K.</div>
+                <span class="card-badge-1080p">視聴中</span>
+              </div>
+              <div class="mylist-card-content">
+                <div class="mylist-title-text">斉木楠雄のΨ難 第1期</div>
+                <div class="mylist-progress-meta">
+                  <span>第3話まで視聴済み</span>
+                  <span style="color: var(--neon-cyan); font-weight: 700;">残り 70%</span>
+                </div>
+                <div class="netflix-track-bar">
+                  <div class="netflix-fill-bar" style="width: 30%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mylist-item-card" onclick="openPlayerWithDetails('【推しの子】第2期', '第24話「お風呂REC / 復讐の行方」', '続きから再生')">
+              <div class="mylist-thumb-cover thumb-bg-oshi">
+                <div class="thumb-lettering-ghost">OSHI NO KO</div>
+                <span class="card-badge-1080p">視聴中</span>
+              </div>
+              <div class="mylist-card-content">
+                <div class="mylist-title-text">【推しの子】第2期</div>
+                <div class="mylist-progress-meta">
+                  <span>第23話まで視聴済み</span>
+                  <span style="color: var(--neon-magenta); font-weight: 700;">残り 5% (最終話)</span>
+                </div>
+                <div class="netflix-track-bar">
+                  <div class="netflix-fill-bar" style="width: 95%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mylist-item-card" onclick="openPlayerWithDetails('呪術廻戦 懐玉・玉折', '第26話', '続きから再生')">
+              <div class="mylist-thumb-cover thumb-bg-jujutsu">
+                <div class="thumb-lettering-ghost">JUJUTSU</div>
+                <span class="card-badge-1080p">視聴中</span>
+              </div>
+              <div class="mylist-card-content">
+                <div class="mylist-title-text">呪術廻戦 懐玉・玉折</div>
+                <div class="mylist-progress-meta">
+                  <span>第25話まで視聴済み</span>
+                  <span style="color: var(--neon-cyan); font-weight: 700;">残り 50%</span>
+                </div>
+                <div class="netflix-track-bar">
+                  <div class="netflix-fill-bar" style="width: 50%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mylist-item-card" onclick="openPlayerWithDetails('葬送のフリーレン', '第1話', '未視聴保存')">
+              <div class="mylist-thumb-cover thumb-bg-frieren">
+                <div class="thumb-lettering-ghost">FRIEREN</div>
+                <span class="card-badge-1080p">保存済み</span>
+              </div>
+              <div class="mylist-card-content">
+                <div class="mylist-title-text">葬送のフリーレン</div>
+                <div class="mylist-progress-meta">
+                  <span>未視聴</span>
+                  <span style="color: var(--text-sub);">残り 100%</span>
+                </div>
+                <div class="netflix-track-bar">
+                  <div class="netflix-fill-bar" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-charts-deck">
+            <div class="chart-panel-card">
+              <div class="chart-panel-title">
+                <span class="chart-panel-title-dot"></span>
+                <span>週間視聴時間統計（単位: 時間）</span>
+              </div>
+              <canvas id="weeklyWatchChart" height="220"></canvas>
+            </div>
+
+            <div class="chart-panel-card">
+              <div class="chart-panel-title">
+                <span class="chart-panel-title-dot" style="background: var(--neon-magenta); box-shadow: 0 0 8px var(--neon-magenta);"></span>
+                <span>ジャンル別嗜好分析（AniStation+ AI算出）</span>
+              </div>
+              <canvas id="genreRadarChart" height="220"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- ■ 4. 「限定ファンチャット」タブ -->
+        <section id="tab-chat" class="tab-view-container">
+          <div class="chat-deck-container">
+            <div class="chat-top-header">
+              <div class="chat-channel-info">
+                <svg width="24" height="24" fill="var(--neon-cyan)" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.82.49 3.53 1.34 5L2 22l5.14-1.31C8.6 21.49 10.25 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                <div class="chat-channel-title">AniStation+ PRO COMMUNITY</div>
+              </div>
+              <div class="chat-live-counter">
+                <span class="blinking-led-dot" style="background: var(--neon-cyan); box-shadow: 0 0 8px var(--neon-cyan);"></span>
+                <span>ONLINE: 3,412 MEMBERS</span>
+              </div>
+            </div>
+
+            <div class="chat-stream-timeline" id="chatStreamBox">
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-cyan">K</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Kouta_Anime</span>
+                    <span class="chat-post-time">10:04</span>
+                  </div>
+                  <div class="chat-message-text">画質1080p無加工マジで神！YouTubeの切り抜きから飛んできたけど画質段違いで鳥肌立ったわ</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-pink">S</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Sakura_Chan</span>
+                    <span class="chat-post-time">10:07</span>
+                  </div>
+                  <div class="chat-message-text">190円安すぎお✨学生のお小遣いでも余裕で入れるから最高！他のサブスク解約してここ一本にした</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-purple">R</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Ren_Otaku</span>
+                    <span class="chat-post-time">10:09</span>
+                  </div>
+                  <div class="chat-message-text">燃堂のキスシーンで腹ちぎれたwww 何回見ても斉木のツッコミがキレキレすぎて無理www</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-cyan">A</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Aqua_Lover</span>
+                    <span class="chat-post-time">10:12</span>
+                  </div>
+                  <div class="chat-message-text">推しの子24話のお風呂RECシーン可愛すぎて何回もループしてる…あかねちゃん推しにはたまらん😭</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-pink">M</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Mio_Mio</span>
+                    <span class="chat-post-time">10:14</span>
+                  </div>
+                  <div class="chat-message-text">1DMで抜こうとしたらアラート出たw セキュリティガチ勢で安心したお</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-purple">T</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Tatsuya_X</span>
+                    <span class="chat-post-time">10:15</span>
+                  </div>
+                  <div class="chat-message-text">このサイトのUIアマプラ超えてて草。大画面フルサイズ崩れないのマジでプロの仕事だわ</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-cyan">H</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Haruto</span>
+                    <span class="chat-post-time">10:16</span>
+                  </div>
+                  <div class="chat-message-text">不労所得で稼ぎまくってアプリ化してほしいお！iPadで触ってて楽しすぎる</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-pink">Y</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Yuki_Yuki</span>
+                    <span class="chat-post-time">10:18</span>
+                  </div>
+                  <div class="chat-message-text">舞台東京ブレイドの感情演技シーン、ビットレート高いから映像が一切ブロックノイズ出ないの最高かよ</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-purple">D</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Daiki_99</span>
+                    <span class="chat-post-time">10:19</span>
+                  </div>
+                  <div class="chat-message-text">Widevineガードガチ勢で安心したお。透かし動いてるのもプロっぽくて好き</div>
+                </div>
+              </div>
+
+              <div class="chat-speech-bubble-row">
+                <div class="chat-avatar-icon avatar-user-cyan">N</div>
+                <div class="chat-message-bundle">
+                  <div class="chat-user-header">
+                    <span class="chat-author-name">Noa_Anime</span>
+                    <span class="chat-post-time">10:20</span>
+                  </div>
+                  <div class="chat-message-text">斉木楠雄第1期の全話アーカイブあるの助かりすぎる。休みの日全部使って一気見する予定🔥</div>
+                </div>
+              </div>
+            </div>
+
+            <form class="chat-bottom-input-bar" id="chatInputForm" onsubmit="handleSendChatMessage(event)">
+              <input type="text" class="chat-text-input" id="chatMessageField" placeholder="リアルタイムでメンバーと会話する..." autocomplete="off">
+              <button type="submit" class="btn-send-message">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                <span>SEND</span>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- ■ 5. 「専用動画プレイヤー」タブ ＆ File API -->
+        <section id="tab-player" class="tab-view-container">
+          <div class="player-cockpit-wrapper">
+
+            <!-- デモ専用ローカル動画アップロードツールバー -->
+            <div class="file-upload-toolbar">
+              <div style="display:flex; align-items:center; gap:0.8rem;">
+                <label for="localVideoUploadInput" class="file-upload-label-btn">
+                  <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                  <span>📁 デモ動画ファイルを読み込む（MP4等）</span>
+                </label>
+                <input type="file" id="localVideoUploadInput" accept="video/*" style="display:none;" onchange="handleLocalVideoFileSelect(event)">
+              </div>
+              <div class="file-status-text" id="videoSourceStatusText">> MODE: SIMULATION STREAM（波形レンダラー）</div>
+            </div>
+
+            <div class="video-viewport-box" id="mainVideoPlayerBox">
+              <!-- 実動画プレーヤー（File API連動） -->
+              <video id="realVideoPlayer" playsinline></video>
+
+              <!-- シミュレーション波形用Canvas -->
+              <canvas id="streamSimulationCanvas"></canvas>
+
+              <div id="dynamicWatermark">PRO_MEMBER_ID: 777 (IP: 192.168.12.84)</div>
+
+              <div class="corner-branding-tag">
+                <img src="https://raw.githubusercontent.com/mikan-maker/AniStationPlus/refs/heads/main/IMG_2364.jpeg" alt="Logo" style="width:22px;height:22px;border-radius:5px;">
+                <span>AniStation+ PRO CINEMA</span>
+              </div>
+
+              <div class="center-action-play" id="centerActionPlayBtn" onclick="togglePlaybackState()">
+                <svg width="38" height="38" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+
+              <div class="player-hud-cockpit">
+                <div class="hud-seek-bar-track" id="videoSeekTrack" onclick="handleSeekTrackClick(event)">
+                  <div class="hud-seek-progress-fill" id="videoSeekFill"></div>
+                </div>
+
+                <div class="hud-controls-deck">
+                  <div class="hud-left-items">
+                    <button class="hud-ctrl-btn" id="hudPlayToggleBtn" onclick="togglePlaybackState()" title="再生/一時停止">
+                      <svg id="hudPlaySvgIcon" width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+
+                    <div class="hud-playback-timer">
+                      <span id="currentTimeLabel">00:00</span> / <span id="totalDurationLabel">24:15</span>
+                    </div>
+
+                    <div class="hud-volume-control-box">
+                      <button class="hud-ctrl-btn" onclick="toggleMuteState()">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                      </button>
+                      <input type="range" class="hud-slider-range" id="hudVolumeSlider" min="0" max="100" value="85" oninput="handleVolumeSliderChange(this.value)">
+                    </div>
+                  </div>
+
+                  <div class="hud-right-items">
+                    <div class="quality-popover-anchor">
+                      <div class="quality-badge-btn" id="qualitySelectorLabel" onclick="toggleQualityDropdown()">1080p FHD</div>
+                      <div class="quality-dropdown-flyout" id="qualityDropdownFlyout">
+                        <div class="quality-item-btn" onclick="selectStreamQuality('4K UltraHD')">4K UltraHD</div>
+                        <div class="quality-item-btn" onclick="selectStreamQuality('1080p FHD')">1080p FHD</div>
+                        <div class="quality-item-btn" onclick="selectStreamQuality('720p HD')">720p HD</div>
+                      </div>
+                    </div>
+
+                    <button class="hud-ctrl-btn" onclick="togglePlayerFullscreen()" title="全画面表示">
+                      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="player-meta-description-deck">
+              <div>
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;">
+                  <span class="badge-chip chip-cyan" id="playerSeriesBadge">斉木楠雄のΨ難 第1期</span>
+                  <span class="badge-chip chip-magenta">独占最速レート配信</span>
+                </div>
+                <h3 class="video-active-title" id="playerTitleLabel">第1χ「超能力者のΨ難（燃堂のキス）」</h3>
+                <p class="video-active-synopsis" id="playerSynopsisLabel">
+                  生まれながらにして超能力を持つ高校生・斉木楠雄。YouTubeショートで世界中を爆笑させた燃堂力との衝撃的邂逅シーン完全ノーカット版！
+                </p>
+              </div>
+              <div style="display:flex; gap:0.8rem; flex-shrink:0;">
+                <button class="btn-hero-play" style="padding:0.75rem 1.3rem; font-size:0.95rem;" onclick="Swal.fire({icon:'success', title:'マイリストに保存しました', background:'#090a16', color:'#fff', confirmButtonColor:'#00f0ff'})">
+                  ＋ マイリスト
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ====================================================
+       1. Three.js 3Dパーティクル・サイバースペース
+       ==================================================== */
+    const threeCanvas = document.getElementById('threeCanvas');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
+    camera.position.z = 1000;
+
+    const renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const particleCount = 3500;
+    const particleGeometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const cyanColor = new THREE.Color(0x00f0ff);
+    const magentaColor = new THREE.Color(0xff00ff);
+
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 2000;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 3000;
+
+      const chosenColor = Math.random() > 0.5 ? cyanColor : magentaColor;
+      colors[i * 3] = chosenColor.r;
+      colors[i * 3 + 1] = chosenColor.g;
+      colors[i * 3 + 2] = chosenColor.b;
+    }
+
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 2.8,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particleSystem);
+
+    let targetMouseX = 0;
+    let targetMouseY = 0;
+    let currentMouseX = 0;
+    let currentMouseY = 0;
+
+    function onPointerMove(x, y) {
+      targetMouseX = (x - window.innerWidth / 2) * 0.35;
+      targetMouseY = (y - window.innerHeight / 2) * 0.35;
+    }
+
+    window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function renderThreeLoop() {
+      requestAnimationFrame(renderThreeLoop);
+
+      const posArr = particleGeometry.attributes.position.array;
+      for (let i = 0; i < particleCount; i++) {
+        posArr[i * 3 + 2] += 4.5;
+        if (posArr[i * 3 + 2] > 1000) {
+          posArr[i * 3 + 2] = -2000;
+          posArr[i * 3] = (Math.random() - 0.5) * 2000;
+          posArr[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+        }
+      }
+      particleGeometry.attributes.position.needsUpdate = true;
+
+      currentMouseX += (targetMouseX - currentMouseX) * 0.05;
+      currentMouseY += (targetMouseY - currentMouseY) * 0.05;
+
+      camera.position.x = currentMouseX;
+      camera.position.y = -currentMouseY;
+      camera.lookAt(0, 0, 0);
+
+      renderer.render(scene, camera);
+    }
+    renderThreeLoop();
+
+    /* ====================================================
+       2. Anime.js モーフィング遷移（LP → ポータル）
+       ==================================================== */
+    const btnRegisterTrigger = document.getElementById('btnRegisterTrigger');
+    const lpContainer = document.getElementById('lpContainer');
+    const portalContainer = document.getElementById('portalContainer');
+
+    btnRegisterTrigger.addEventListener('click', () => {
+      const timeline = anime.timeline({
+        easing: 'cubicBezier(0.16, 1, 0.3, 1)'
+      });
+
+      timeline
+        .add({
+          targets: '.anim-target',
+          scale: [1, 1.15, 0],
+          opacity: [1, 0],
+          translateY: () => anime.random(-150, 150),
+          translateX: () => anime.random(-200, 200),
+          rotate: () => anime.random(-30, 30),
+          delay: anime.stagger(60),
+          duration: 700
+        })
+        .add({
+          targets: lpContainer,
+          opacity: [1, 0],
+          duration: 300,
+          complete: () => {
+            lpContainer.style.display = 'none';
+            portalContainer.style.display = 'flex';
+
+            Swal.fire({
+              title: '[AniStation+] プレミアム認証完了',
+              text: '永久プロメンバーとしてログインしました。全編見放題をお楽しみください。',
+              icon: 'success',
+              background: '#090a16',
+              color: '#f8fafc',
+              confirmButtonColor: '#00f0ff',
+              confirmButtonText: 'ストリーミング開始',
+              backdrop: 'rgba(0, 240, 255, 0.15)'
+            });
+
+            initMylistFeatures();
+          }
+        })
+        .add({
+          targets: portalContainer,
+          opacity: [0, 1],
+          duration: 600
+        })
+        .add({
+          targets: '.cyber-sidebar, .cyber-header',
+          translateX: [-60, 0],
+          opacity: [0, 1],
+          duration: 700,
+          easing: 'easeOutElastic(1, .8)'
+        }, '-=400')
+        .add({
+          targets: '#tab-home > *',
+          translateY: [40, 0],
+          opacity: [0, 1],
+          delay: anime.stagger(100),
+          duration: 800,
+          easing: 'easeOutCubic'
+        }, '-=500');
+    });
+
+    /* ====================================================
+       3. サイドバー動的タブ切り替え
+       ==================================================== */
+    const navButtons = document.querySelectorAll('.side-nav-btn');
+    const tabViews = document.querySelectorAll('.tab-view-container');
+
+    function switchNavTab(tabId) {
+      navButtons.forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      tabViews.forEach(view => {
+        view.classList.remove('show');
+      });
+
+      const activeView = document.getElementById('tab-' + tabId);
+      if (activeView) {
+        setTimeout(() => {
+          activeView.classList.add('show');
+        }, 50);
+      }
+
+      if (tabId === 'player') {
+        resizeStreamCanvas();
+      }
+    }
+
+    /* ====================================================
+       4. 作品カードクリック ＆ プレイヤー連動
+       ==================================================== */
+    const playerSeriesBadge = document.getElementById('playerSeriesBadge');
+    const playerTitleLabel = document.getElementById('playerTitleLabel');
+    const playerSynopsisLabel = document.getElementById('playerSynopsisLabel');
+
+    function openPlayerWithDetails(series, title, synopsis) {
+      playerSeriesBadge.innerText = series;
+      playerTitleLabel.innerText = title;
+      playerSynopsisLabel.innerText = synopsis;
+
+      if (hasRealVideo) {
+        realVideoPlayer.currentTime = 0;
+        realVideoPlayer.play();
+      } else {
+        simulationPlaybackSec = 0;
+      }
+      setPlaybackActive(true);
+      switchNavTab('player');
+    }
+
+    /* ====================================================
+       5. マイリスト（SortableJS ＆ Chart.js）
+       ==================================================== */
+    let chartInstanceBar = null;
+    let chartInstanceRadar = null;
+
+    function initMylistFeatures() {
+      const sortableEl = document.getElementById('sortableMylistGrid');
+      Sortable.create(sortableEl, {
+        animation: 250,
+        ghostClass: 'sortable-ghost'
+      });
+
+      if (!chartInstanceBar) {
+        const ctxBar = document.getElementById('weeklyWatchChart').getContext('2d');
+        chartInstanceBar = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: ['月', '火', '水', '木', '金', '土', '日'],
+            datasets: [{
+              label: '視聴時間 (h)',
+              data: [3.5, 2.0, 5.2, 1.8, 6.4, 8.5, 7.2],
+              backgroundColor: 'rgba(0, 240, 255, 0.45)',
+              borderColor: '#00f0ff',
+              borderWidth: 2,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3b8' } },
+              y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3b8' } }
+            },
+            plugins: {
+              legend: { labels: { color: '#fff', font: { family: 'Orbitron' } } }
+            }
+          }
+        });
+      }
+
+      if (!chartInstanceRadar) {
+        const ctxRadar = document.getElementById('genreRadarChart').getContext('2d');
+        chartInstanceRadar = new Chart(ctxRadar, {
+          type: 'radar',
+          data: {
+            labels: ['ギャグ/日常', 'ダークサスペンス', '異世界/ファンタジー', 'バトルアクション', '恋愛/ドラマ'],
+            datasets: [{
+              label: '視聴嗜好指数',
+              data: [95, 88, 70, 92, 60],
+              backgroundColor: 'rgba(255, 0, 255, 0.3)',
+              borderColor: '#ff00ff',
+              pointBackgroundColor: '#00f0ff',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              r: {
+                angleLines: { color: 'rgba(255,255,255,0.1)' },
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                pointLabels: { color: '#cbd5e1', font: { size: 11, family: 'Noto Sans JP' } },
+                ticks: { display: false }
+              }
+            },
+            plugins: {
+              legend: { labels: { color: '#fff', font: { family: 'Orbitron' } } }
+            }
+          }
+        });
+      }
+    }
+
+    /* ====================================================
+       6. リアルタイムチャット
+       ==================================================== */
+    const chatStreamBox = document.getElementById('chatStreamBox');
+    const chatMessageField = document.getElementById('chatMessageField');
+
+    function handleSendChatMessage(e) {
+      e.preventDefault();
+      const content = chatMessageField.value.trim();
+      if (!content) return;
+
+      const date = new Date();
+      const h = date.getHours().toString().padStart(2, '0');
+      const m = date.getMinutes().toString().padStart(2, '0');
+
+      const bubbleRow = document.createElement('div');
+      bubbleRow.className = 'chat-speech-bubble-row';
+      bubbleRow.innerHTML = `
+        <div class="chat-avatar-icon avatar-pro-user">PRO</div>
+        <div class="chat-message-bundle">
+          <div class="chat-user-header">
+            <span class="chat-author-name author-gold-badge">PRO_MEMBER</span>
+            <span class="chat-post-time">${h}:${m}</span>
+          </div>
+          <div class="chat-message-text text-gold-highlight">${escapeHTML(content)}</div>
+        </div>
+      `;
+
+      chatStreamBox.appendChild(bubbleRow);
+      chatMessageField.value = '';
+
+      chatStreamBox.scrollTo({
+        top: chatStreamBox.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    /* ====================================================
+       7. 専用動画プレイヤー ＆ File APIローカル動画再生
+       ==================================================== */
+    let isStreamActive = true;
+    let hasRealVideo = false;
+    let simulationPlaybackSec = 45;
+    let totalPlaybackDuration = 1455; // 24:15
+
+    const realVideoPlayer = document.getElementById('realVideoPlayer');
+    const streamCanvas = document.getElementById('streamSimulationCanvas');
+    const streamCtx = streamCanvas.getContext('2d');
+    const videoSourceStatusText = document.getElementById('videoSourceStatusText');
+    const videoSeekFill = document.getElementById('videoSeekFill');
+    const currentTimeLabel = document.getElementById('currentTimeLabel');
+    const totalDurationLabel = document.getElementById('totalDurationLabel');
+    const hudPlaySvgIcon = document.getElementById('hudPlaySvgIcon');
+    const centerActionPlayBtn = document.getElementById('centerActionPlayBtn');
+    const mainVideoPlayerBox = document.getElementById('mainVideoPlayerBox');
+    const qualityDropdownFlyout = document.getElementById('qualityDropdownFlyout');
+    const qualitySelectorLabel = document.getElementById('qualitySelectorLabel');
+    const hudVolumeSlider = document.getElementById('hudVolumeSlider');
+
+    function formatTimeCode(sec) {
+      if (isNaN(sec)) sec = 0;
+      const min = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${min}:${s}`;
+    }
+
+    function updateHudSeekDisplay(currSec, durSec) {
+      const pct = durSec > 0 ? (currSec / durSec) * 100 : 0;
+      videoSeekFill.style.width = pct + '%';
+      currentTimeLabel.innerText = formatTimeCode(currSec);
+      totalDurationLabel.innerText = formatTimeCode(durSec);
+    }
+
+    function setPlaybackActive(active) {
+      isStreamActive = active;
+      if (isStreamActive) {
+        hudPlaySvgIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+        centerActionPlayBtn.style.display = 'none';
+        if (hasRealVideo) realVideoPlayer.play();
+      } else {
+        hudPlaySvgIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        centerActionPlayBtn.style.display = 'flex';
+        if (hasRealVideo) realVideoPlayer.pause();
+      }
+    }
+
+    function togglePlaybackState() {
+      setPlaybackActive(!isStreamActive);
+    }
+
+    /* File API: ローカル動画の即時マウント */
+    function handleLocalVideoFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const videoObjectUrl = URL.createObjectURL(file);
+      realVideoPlayer.src = videoObjectUrl;
+      realVideoPlayer.style.display = 'block';
+      streamCanvas.style.display = 'none';
+      hasRealVideo = true;
+
+      videoSourceStatusText.innerText = `> FILE LOADED: ${file.name.toUpperCase()} (1080p BITRATE DIRECT)`;
+      playerSeriesBadge.innerText = 'LOCAL FILE DIRECT STREAM';
+      playerTitleLabel.innerText = file.name;
+      playerSynopsisLabel.innerText = `ローカルデバイスから読み込まれたデモ動画ファイル。File API (URL.createObjectURL) を介して専用サイバーコントローラーと完全同期中。サイズ: ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+      realVideoPlayer.volume = hudVolumeSlider.value / 100;
+      realVideoPlayer.play();
+      setPlaybackActive(true);
+
+      Swal.fire({
+        title: '動画ファイルの読み込み完了',
+        text: `「${file.name}」を正常にマウントしました。プレイヤーでコントロール可能です。`,
+        icon: 'success',
+        background: '#0a0a14',
+        color: '#fff',
+        confirmButtonColor: '#00f0ff'
+      });
+    }
+
+    /* 実動画イベントリスナー */
+    realVideoPlayer.addEventListener('timeupdate', () => {
+      if (hasRealVideo && !realVideoPlayer.paused) {
+        totalPlaybackDuration = realVideoPlayer.duration || totalPlaybackDuration;
+        updateHudSeekDisplay(realVideoPlayer.currentTime, totalPlaybackDuration);
+      }
+    });
+
+    realVideoPlayer.addEventListener('ended', () => {
+      setPlaybackActive(false);
+    });
+
+    /* シークバークリック */
+    function handleSeekTrackClick(e) {
+      const track = document.getElementById('videoSeekTrack');
+      const rect = track.getBoundingClientRect();
+      const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+
+      if (hasRealVideo) {
+        const targetSec = clickRatio * (realVideoPlayer.duration || totalPlaybackDuration);
+        realVideoPlayer.currentTime = targetSec;
+        updateHudSeekDisplay(targetSec, realVideoPlayer.duration || totalPlaybackDuration);
+      } else {
+        simulationPlaybackSec = Math.floor(clickRatio * totalPlaybackDuration);
+        updateHudSeekDisplay(simulationPlaybackSec, totalPlaybackDuration);
+      }
+    }
+
+    /* 音量スライダー連動 */
+    function handleVolumeSliderChange(val) {
+      const vol = val / 100;
+      if (hasRealVideo) {
+        realVideoPlayer.volume = vol;
+      }
+    }
+
+    function toggleMuteState() {
+      if (hudVolumeSlider.value > 0) {
+        hudVolumeSlider.value = 0;
+        if (hasRealVideo) realVideoPlayer.volume = 0;
+      } else {
+        hudVolumeSlider.value = 85;
+        if (hasRealVideo) realVideoPlayer.volume = 0.85;
+      }
+    }
+
+    function toggleQualityDropdown() {
+      qualityDropdownFlyout.style.display = qualityDropdownFlyout.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function selectStreamQuality(label) {
+      qualitySelectorLabel.innerText = label;
+      qualityDropdownFlyout.style.display = 'none';
+    }
+
+    function togglePlayerFullscreen() {
+      if (!document.fullscreenElement) {
+        mainVideoPlayerBox.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    /* シミュレーションモード用タイマー（実動画未選択時に動作） */
+    setInterval(() => {
+      if (!hasRealVideo && isStreamActive) {
+        simulationPlaybackSec++;
+        if (simulationPlaybackSec >= totalPlaybackDuration) {
+          simulationPlaybackSec = 0;
+        }
+        updateHudSeekDisplay(simulationPlaybackSec, totalPlaybackDuration);
+      }
+    }, 1000);
+
+    /* ====================================================
+       8. 動画スクリーン内 Canvas 波形アニメーション
+       ==================================================== */
+    function resizeStreamCanvas() {
+      streamCanvas.width = mainVideoPlayerBox.clientWidth;
+      streamCanvas.height = mainVideoPlayerBox.clientHeight;
+    }
+
+    window.addEventListener('resize', () => {
+      if (portalContainer.style.display === 'flex') {
+        resizeStreamCanvas();
+      }
+    });
+
+    let waveFrameTick = 0;
+    function renderStreamScene() {
+      if (!hasRealVideo) {
+        const w = streamCanvas.width;
+        const h = streamCanvas.height;
+
+        streamCtx.fillStyle = '#05060e';
+        streamCtx.fillRect(0, 0, w, h);
+
+        const horizonY = h * 0.72;
+        streamCtx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+        streamCtx.lineWidth = 1;
+        for (let x = 0; x <= w; x += 40) {
+          streamCtx.beginPath();
+          streamCtx.moveTo(x, horizonY);
+          streamCtx.lineTo((x - w / 2) * 3 + w / 2, h);
+          streamCtx.stroke();
+        }
+
+        if (isStreamActive) waveFrameTick += 0.05;
+
+        const barCount = 42;
+        const barW = w / barCount;
+        for (let i = 0; i < barCount; i++) {
+          const amp = isStreamActive
+            ? Math.sin(waveFrameTick + i * 0.35) * Math.cos(waveFrameTick * 0.7 + i) * 38 + 42
+            : 5;
+          const bx = i * barW;
+          const by = horizonY - amp;
+
+          const grad = streamCtx.createLinearGradient(0, by, 0, horizonY);
+          grad.addColorStop(0, '#ff00ff');
+          grad.addColorStop(0.6, '#00f0ff');
+          grad.addColorStop(1, 'transparent');
+
+          streamCtx.fillStyle = grad;
+          streamCtx.fillRect(bx + 2, by, barW - 4, amp);
+        }
+
+        const orbGrad = streamCtx.createRadialGradient(w / 2, h / 2 - 20, 10, w / 2, h / 2 - 20, 120);
+        orbGrad.addColorStop(0, 'rgba(0, 240, 255, 0.85)');
+        orbGrad.addColorStop(0.5, 'rgba(255, 0, 255, 0.4)');
+        orbGrad.addColorStop(1, 'transparent');
+        streamCtx.fillStyle = orbGrad;
+        streamCtx.beginPath();
+        streamCtx.arc(w / 2, h / 2 - 20, 120, 0, Math.PI * 2);
+        streamCtx.fill();
+
+        streamCtx.fillStyle = '#ffffff';
+        streamCtx.font = "bold 18px 'Orbitron', sans-serif";
+        streamCtx.textAlign = 'center';
+        streamCtx.fillText("AniStation+ OFFICIAL PRO STREAM", w / 2, h / 2 - 20);
+
+        streamCtx.fillStyle = '#00f0ff';
+        streamCtx.font = "bold 15px 'Noto Sans JP', sans-serif";
+        streamCtx.fillText(playerTitleLabel.innerText, w / 2, h / 2 + 12);
+
+        if (!isStreamActive) {
+          streamCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+          streamCtx.fillRect(0, 0, w, h);
+        }
+      }
+
+      requestAnimationFrame(renderStreamScene);
+    }
+    resizeStreamCanvas();
+    renderStreamScene();
+
+    /* ====================================================
+       9. 動的ウォーターマーク（電子透かし）ランダム移動
+       ==================================================== */
+    const dynamicWatermark = document.getElementById('dynamicWatermark');
+    function moveWatermark() {
+      if (mainVideoPlayerBox.clientWidth > 0 && mainVideoPlayerBox.clientHeight > 0) {
+        const maxX = mainVideoPlayerBox.clientWidth - 280;
+        const maxY = mainVideoPlayerBox.clientHeight - 80;
+        const randomX = Math.max(20, Math.random() * maxX);
+        const randomY = Math.max(30, Math.random() * maxY);
+        dynamicWatermark.style.left = randomX + 'px';
+        dynamicWatermark.style.top = randomY + 'px';
+      }
+    }
+    setInterval(moveWatermark, 4000);
+    moveWatermark();
+
+    /* ====================================================
+       10. SweetAlert2 泥棒撃退フェイク警告（1DM/DevTools検知）
+       ==================================================== */
+    const flashBangOverlay = document.getElementById('flashBangOverlay');
+
+    function triggerSecurityIntervention() {
+      flashBangOverlay.style.opacity = '0.85';
+      setTimeout(() => {
+        flashBangOverlay.style.opacity = '0';
+      }, 150);
+
+      Swal.fire({
+        title: '【警告】不正なパケット抽出アクティビティを検出',
+        html: `
+          <div style="text-align:left; font-size:0.88rem; line-height:1.6; color:#cbd5e1;">
+            <p style="color:#ff3366; font-weight:800; margin-bottom:0.5rem;">[WIDEVINE L3 TAMPER DETECTED]</p>
+            1DM / デベロッパーツールに類似するメディアストリーム傍受シグナルを検知しました。<br>
+            AniStation+ の公式著作権保護システムに基づき、ストリーミングを一時遮断・暗号化保護します。<br>
+            <span style="font-family:'JetBrains Mono'; font-size:0.75rem; color:#64748b;">TIMESTAMP: ${new Date().toISOString()}</span>
+          </div>
+        `,
+        icon: 'error',
+        background: '#0a0a14',
+        color: '#ffffff',
+        confirmButtonColor: '#ff0055',
+        confirmButtonText: 'セッションを再検証して復帰',
+        backdrop: 'rgba(255, 0, 85, 0.25)'
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (
+        e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.metaKey && e.altKey && (e.key === 'I' || e.key === 'J' || e.key === 'C'))
+      ) {
+        e.preventDefault();
+        triggerSecurityIntervention();
+      }
+    });
+
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      triggerSecurityIntervention();
+    });
+  </script>
+</body>
+</html>
